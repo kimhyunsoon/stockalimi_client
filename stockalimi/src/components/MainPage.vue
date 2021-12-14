@@ -6,7 +6,7 @@
           <img src="../assets/img/notification.svg"/>
         </div>
         <div class="text">
-          <p class="tit">[ 급등주알림 : {{ pushData.title }} ]</p>
+          <p class="tit">{{ pushData.title }}</p>
           <p class="body">{{ pushData.body }}</p>
         </div>
       </div>
