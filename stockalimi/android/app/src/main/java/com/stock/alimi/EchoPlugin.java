@@ -40,60 +40,25 @@ public class EchoPlugin extends Plugin {
     public void load() {
         mAuth = FirebaseAuth.getInstance();
         mCallbacks = new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-
             @Override
             public void onVerificationCompleted(PhoneAuthCredential credential) {
-
-                // This callback will be invoked in two situations:
-                // 1 - Instant verification. In some cases the phone number can be instantly
-                //     verified without needing to send or enter a verification code.
-                // 2 - Auto-retrieval. On some devices Google Play services can automatically
-                //     detect the incoming verification SMS and perform verification without
-                //     user action.
                 Log.d(TAG, "콜백:완료" + credential);
             }
-
             @Override
             public void onVerificationFailed(FirebaseException e) {
-
-                // This callback is invoked in an invalid request for verification is made,
-                // for instance if the the phone number format is not valid.
                 Log.w(TAG, "콜백:실패", e);
-
-
-                if (e instanceof FirebaseAuthInvalidCredentialsException) {
-                  // Invalid request
-                } else if (e instanceof FirebaseTooManyRequestsException) {
-                  // The SMS quota for the project has been exceeded
-                }
-              // Show a message and update the UI
-
             }
-
             @Override
             public void onCodeSent(@NonNull String verificationId,
                                     @NonNull PhoneAuthProvider.ForceResendingToken token) {
-                // The SMS verification code has been sent to the provided phone number, we
-                // now need to ask the user to enter the code and then construct a credential
-                // by combining the code with a verification ID.
                 Log.d(TAG, "콜백:발송성공:" + verificationId);
-
-                // Save verification ID and resending token so we can use them later
                 mVerificationId = verificationId;
                 mResendToken = token;
-
             }
         };
     }
 
-
-    @PluginMethod()
-    public void echo(PluginCall call) {
-        JSObject ret = new JSObject();
-        ret.put("value", "err");
-        call.resolve(ret);
-    }
-    
+    //인증코드 체크
     @PluginMethod()
     public void codeCheck(PluginCall call) {
         String code = call.getString("code");
@@ -131,9 +96,9 @@ public class EchoPlugin extends Plugin {
       });
     }
 
+    //인증코드 발송 
     @PluginMethod()
     public void sendSms(PluginCall call) {
-
         String phoneNumber = call.getString("phone");
         PhoneAuthOptions options =
                 PhoneAuthOptions.newBuilder(mAuth)
@@ -149,6 +114,7 @@ public class EchoPlugin extends Plugin {
         call.resolve(ret);
     }
 
+    //사용자 인증
     private void signInWithPhoneAuthCredential(PhoneAuthCredential credential, PluginCall call) {
         JSObject ret = new JSObject();
         mAuth.signInWithCredential(credential)
@@ -156,20 +122,14 @@ public class EchoPlugin extends Plugin {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            // Sign in success, update UI with the signed-in user's information
                             Log.d(TAG, "signInWithCredential:success");
-
                             FirebaseUser user = task.getResult().getUser();
-
                             Log.d(TAG, String.valueOf(user));
                             ret.put("value", "success");
                             call.resolve(ret);
-                            // Update UI
                         } else {
-                            // Sign in failed, display a message and update the UI
                             Log.w(TAG, "signInWithCredential:failure", task.getException());
                             if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
-                                // The verification code entered was invalid
                             }
                             ret.put("value", "fail");
                             call.resolve(ret);
