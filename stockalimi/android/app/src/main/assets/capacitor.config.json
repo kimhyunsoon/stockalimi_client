@@ -1,0 +1,6 @@
+{
+	"appId": "com.stock.alimi",
+	"appName": "stockalimi",
+	"webDir": "dist",
+	"bundledWebRuntime": false
+}
