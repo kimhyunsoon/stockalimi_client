@@ -11,13 +11,10 @@
         </div>
       </div>
     </div>
-    <div class="refreshBtn" @click="refreshClick($event)">
-      <img src="../assets/img/refresh.svg"/>
-    </div>
     <div class="headerBar">
       <div class="mainTitle">
-        <p>{{ APP_NAME }}</p>
-        <div class="icon">
+        <p>{{ APP_INFO.app_name }}</p>
+        <div class="icon" :style="{ backgroundColor : APP_INFO.app_color }">
           <img src="../assets/img/notification.svg"/>
         </div>
       </div>
@@ -25,8 +22,8 @@
         class="alarmStatus"
         @click="alarmSet"
       >
-        <p v-bind:class="[ alarmStatus ? 'on' : 'off' ]">
-          {{`${alarmStatus?'알림 ON':'알림 OFF'}`}}
+        <p v-bind:class="[ notificationStatus ? 'on' : 'off' ]">
+          {{`${notificationStatus?'알림 ON':'알림 OFF'}`}}
         </p>
 
         <v-container
@@ -34,95 +31,118 @@
           fluid
         >
           <v-switch
-            v-model="alarmStatus"
+            v-model="notificationStatus"
           ></v-switch>
         </v-container>
       </div>
     </div>
-    <div v-if="stockData==false" class="mainProgressWrap">
-      <v-progress-circular
-        :size="40"
-        :width="7"
-        color="blue"
-        indeterminate
-      ></v-progress-circular>
-      <p class="loadingMsg">주식정보를 불러오는중입니다.</p>
+    <!--토글 버튼: 주식정보-->
+    <div class="toggleBtn"
+        :style="{ backgroundColor : APP_INFO.app_color }"
+        :class="{ 'on': getMainPageStatus('stockData') }"
+        @click="gotoStockData()"
+    >
+      <img src="../assets/img/notiWhite.svg"/>
     </div>
-    <div v-else-if="stockData=='err'" class="mainProgressWrap">
-      <div class="errorWrap">
-        <img src="../assets/img/errorIcon.svg"/>
-        <p class="errorTitle">오류가 발생하였습니다.</p>
-        <p class="errorSub">불편을 드려 죄송합니다. 다시 시도해주세요.</p>
-        <button class="backBtn" @click="refreshClick($event)">다시 시도</button>
+    <!--토글 버튼: 알림목록-->
+    <div class="toggleBtn"
+        :style="{ backgroundColor : APP_INFO.app_color }"
+        :class="{ 'on': getMainPageStatus('notiList') }"
+        @click="gotoNotiList('')"
+    >
+      <img src="../assets/img/stockWhite.svg"/>
+    </div>
+    <!--페이지상태: 주식정보-->
+    <div v-if="mainPageStatus==='stockData'">
+      <div class="refreshBtn" @click="refreshClick($event)">
+        <img src="../assets/img/refresh.svg"/>
+      </div>
+      <div v-if="stockData==false" class="mainProgressWrap">
+        <v-progress-circular
+          :size="40"
+          :width="7"
+          :color="APP_INFO.app_color"
+          indeterminate
+        ></v-progress-circular>
+        <p class="loadingMsg">주식정보를 불러오는중입니다.</p>
+      </div>
+      <div v-else-if="stockData=='err'" class="mainProgressWrap">
+        <div class="errorWrap">
+          <img src="../assets/img/errorIcon.svg"/>
+          <p class="errorTitle">오류가 발생하였습니다.</p>
+          <p class="errorSub">불편을 드려 죄송합니다. 다시 시도해주세요.</p>
+          <button class="backBtn" @click="refreshClick($event)">다시 시도</button>
+        </div>
+      </div>
+      <div v-else-if="stockData" class="cardWrap">
+        <div class="card" v-bind:class="kospiDnUp">
+          <div class="cardTitle">
+            <p class="tit">코스피<b>KOSPI</b></p>
+            <p class="price">
+              {{stockData.kospiData.price}}
+            </p>
+          </div>
+          <div class="graphWrap">
+            <img :src="stockData.kospiData.graph"/>
+            <div class="data">
+              <p class="priceNum">
+                <b v-if="kospiDnUp=='dn'">▼</b>
+                <b v-else-if="kospiDnUp=='up'">▲</b>
+                {{stockData.kospiData.daytodayPrice}}
+              </p>
+              <p class="per">
+                {{stockData.kospiData.daytodayPer}}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="card" v-bind:class="kosdaqDnUp">
+          <div class="cardTitle">
+            <p class="tit">코스닥<b>KOSDAQ</b></p>
+            <p class="price">
+              {{stockData.kosdaqData.price}}
+            </p>
+          </div>
+          <div class="graphWrap">
+            <img :src="stockData.kosdaqData.graph"/>
+            <div class="data">
+              <p class="priceNum">
+                <b v-if="kosdaqDnUp=='dn'">▼</b>
+                <b v-else-if="kosdaqDnUp=='up'">▲</b>
+                {{stockData.kosdaqData.daytodayPrice}}
+              </p>
+              <p class="per">
+                {{stockData.kosdaqData.daytodayPer}}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="upStockRacking">
+          <p class="tit">거래상위</p>
+          <div class="listCard"
+            v-for="(value, key) in stockData.stockList" v-bind:key="key"
+            v-bind:class="[ value.daytodayType == '하락' ? 'dn' : 'up' ]"
+          >
+            <div class="listCardTit">
+              <b>{{key}}. </b> {{value.name}}
+            </div>
+            <div class="listInfo">
+              <p class="price">{{value.price}}</p>
+              <p class="daytodayPrice">
+                <b v-if="value.daytodayType=='하락'">▼</b>
+                <b v-else-if="value.daytodayType=='상승'">▲</b>
+                {{value.daytodayPrice}}
+              </p>
+              <p class="daytodayPer">{{value.daytodayPer}}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div v-else-if="stockData" class="cardWrap">
-      <div class="card" v-bind:class="kospiDnUp">
-        <div class="cardTitle">
-          <p class="tit">코스피<b>KOSPI</b></p>
-          <p class="price">
-            {{stockData.kospiData.price}}
-          </p>
-        </div>
-        <div class="graphWrap">
-          <img :src="stockData.kospiData.graph"/>
-          <div class="data">
-            <p class="priceNum">
-              <b v-if="kospiDnUp=='dn'">▼</b>
-              <b v-else-if="kospiDnUp=='up'">▲</b>
-              {{stockData.kospiData.daytodayPrice}}
-            </p>
-            <p class="per">
-              {{stockData.kospiData.daytodayPer}}
-            </p>
-
-          </div>
-        </div>
-
-      </div>
-      <div class="card" v-bind:class="kosdaqDnUp">
-        <div class="cardTitle">
-          <p class="tit">코스닥<b>KOSDAQ</b></p>
-          <p class="price">
-            {{stockData.kosdaqData.price}}
-          </p>
-        </div>
-        <div class="graphWrap">
-          <img :src="stockData.kosdaqData.graph"/>
-          <div class="data">
-            <p class="priceNum">
-              <b v-if="kosdaqDnUp=='dn'">▼</b>
-              <b v-else-if="kosdaqDnUp=='up'">▲</b>
-              {{stockData.kosdaqData.daytodayPrice}}
-            </p>
-            <p class="per">
-              {{stockData.kosdaqData.daytodayPer}}
-            </p>
-
-          </div>
-        </div>
-
-      </div>
-
-      <div class="upStockRacking">
-        <p class="tit">거래상위</p>
-        <div class="listCard"
-          v-for="(value, key) in stockData.stockList" v-bind:key="key"
-          v-bind:class="[ value.daytodayType == '하락' ? 'dn' : 'up' ]"
-        >
-          <div class="listCardTit">
-            <b>{{key}}. </b> {{value.name}}
-          </div>
-          <div class="listInfo">
-            <p class="price">{{value.price}}</p>
-            <p class="daytodayPrice">
-              <b v-if="value.daytodayType=='하락'">▼</b>
-              <b v-else-if="value.daytodayType=='상승'">▲</b>
-              {{value.daytodayPrice}}
-            </p>
-            <p class="daytodayPer">{{value.daytodayPer}}</p>
-          </div>
-        </div>
+    <!--페이지상태: 알림목록-->
+    <div v-else-if="mainPageStatus==='notiList'">
+      <div class="refreshBtn" @click="refreshClick($event)">
+        <img src="../assets/img/refresh.svg"/>
       </div>
     </div>
     <v-bottom-sheet v-model="alramOffMsg" persistent class="noAlarmWrap">
@@ -144,7 +164,7 @@
           </v-btn>
           <v-btn
             class="cancle"
-            @click="alramOffMsg = false, alarmStatus = true"
+            @click="alramOffMsg = false, notificationStatus(true)"
           >
             취소
           </v-btn>
@@ -159,29 +179,62 @@ import axios from 'axios';
 import { Storage } from '@capacitor/storage';
 import { FCM } from '@capacitor-community/fcm';
 import { io } from 'socket.io-client';
-import appInformation from '../assets/app_information.json';
 
 export default {
   name: 'Main',
+  computed: {
+    /* vuex : 앱 정보 */
+    APP_INFO() {
+      return this.$store.state.APP_INFO;
+    },
+    notificationStatus() {
+      return this.$store.state.notificationStatus;
+    },
+  },
   data: () => ({
-    alarmStatus: false,
+    mainPageStatus: 'notiList',
     stockData: false,
+    notiList: false,
     kospiDnUp: '',
     kosdaqDnUp: '',
     alramOffMsg: false,
     pushModal: false,
     pushData: { title: '', body: '' },
-    APP_NAME: appInformation.name,
-    APP_PACKAGE: appInformation.package,
-    APP_SERVER: appInformation.server,
   }),
   methods: {
-    refresh() {
+    /* vuex : 알람수신여부 전환 */
+    /* eslint-disable-next-line */
+    notificationStatusCng: function (bool) {
+      this.$store.commit('notificationStatusCng', bool);
+    },
+    getMainPageStatus(status) {
+      return this.mainPageStatus === status;
+    },
+    setMainPageStatus(status) {
+      this.mainPageStatus = status;
+    },
+    getNotiList() {
       this.stockData = false;
-      axios.get(`${this.APP_SERVER}/stock`, {
+      axios.get(`${this.APP_INFO.server}/notification/${this.APP_INFO.phone}`, {
         headers: {
-          /* 크롤링 데이터 요청의 경우는 간단히 앱-서버 간 약속된 문자열 확인 후 처리함 */
-          appInformation: 'stockalimi',
+          apikey: this.APP_INFO.api_key,
+          appcode: this.APP_INFO.app_code,
+        },
+      })
+        .then((r) => {
+          console.log(r);
+        })
+        .catch((e) => {
+          this.stockData = 'err';
+          console.log(e);
+        });
+    },
+    getStockData() {
+      this.stockData = false;
+      axios.get(`${this.APP_INFO.server}/stock`, {
+        headers: {
+          apikey: this.APP_INFO.api_key,
+          appcode: this.APP_INFO.app_code,
         },
       })
         .then((r) => {
@@ -206,8 +259,14 @@ export default {
           console.log(e);
         });
     },
+    refresh() {
+      if (this.mainPageStatus === 'notiList') {
+        this.getNotiList();
+      } else if (this.mainPageStatus === 'stockData') {
+        this.getStockData();
+      }
+    },
     refreshClick(e) {
-      this.stockData = false;
       e.target.classList.add('on');
       setTimeout(() => {
         this.refresh();
@@ -222,7 +281,7 @@ export default {
       }
     },
     alarmOnEvent() {
-      FCM.subscribeTo({ topic: this.APP_PACKAGE })
+      FCM.subscribeTo({ topic: this.APP_INFO.app_code })
         .then(() => {
           console.log('subscribed to topic');
           this.alarmStatus = true;
@@ -247,7 +306,7 @@ export default {
       }
     },
     alarmOffEvent() {
-      FCM.unsubscribeFrom({ topic: this.APP_PACKAGE })
+      FCM.unsubscribeFrom({ topic: this.APP_INFO.app_name })
         .then(() => {
           console.log('unsubscribed from topic');
           this.alramOffMsg = false;
@@ -268,7 +327,7 @@ export default {
   created() {
     this.localCheckAlarm();
     this.refresh();
-    const socket = io.connect(this.APP_SERVER);
+    const socket = io.connect(this.APP_INFO.server);
     socket.on(this.APP_PACKAGE, (data) => {
       if (this.alarmStatus === true && this.pushData.title === '') {
         this.pushData.title = data.title;

@@ -1,59 +1,216 @@
 <template>
-  <div v-if="certificationStatus === true">
-    <main-page/>
-    <div class="footerMsg" v-bind:class="{ 'on' : joinSuccess }">
-      <p>등록이 완료되었습니다.</p>
+  <div class="homeWrap" v-bind:class="pageStatus">
+    <!-- <v-btn @click="testClick1()" class="testBtn testBtn1">testClick1</v-btn>
+    <v-btn @click="testClick2()" class="testBtn testBtn2">testClick2</v-btn> -->
+    <!-- 전역 메시지 -->
+    <div class="globalMsgWrap" v-bind:class="pageStatus">
+      <div class="globalMsg" v-bind:class="{ 'on':globalMsgModal }" v-html="globalMsgContent"></div>
     </div>
-  </div>
-  <div v-else>
-    <randing-page joinSuccess="joinSuccess"/>
+    <!-- 로딩 화면 -->
+    <div v-if="pageStatus === 'loading'">
+      <loading-page/>
+    </div>
+    <!-- 인증되지 않은 경우 (랜딩)-->
+    <div v-else-if="pageStatus === 'landing'">
+      <landing-page/>
+    </div>
+    <!-- 인증된 사용자일 경우 (메인)-->
+    <div v-else-if="pageStatus === 'main'">
+      <main-page/>
+    </div>
+    <!-- 만료된 사용자일 경우-->
+    <div v-else-if="pageStatus === 'expiration'">
+      <expiration-page/>
+    </div>
+    <!-- 에러가 발생했을 경우 -->
+    <div v-else-if="pageStatus === 'error'">
+      <error-page/>
+    </div>
+    <!-- 인증되지 않은 앱일 경우 -->
+    <div v-else-if="pageStatus === '403'">
+      <forbidden-page/>
+    </div>
   </div>
 </template>
 
 <script>
 import { Storage } from '@capacitor/storage';
-import RandingPage from '../components/RandingPage.vue';
+import axios from 'axios';
+import LandingPage from '../components/LandingPage.vue';
 import MainPage from '../components/MainPage.vue';
+import ExpirationPage from '../components/ExpirationPage.vue';
+import ErrorPage from '../components/ErrorPage.vue';
+import ForbiddenPage from '../components/ForbiddenPage.vue';
+import LoadingPage from '../components/LoadingPage.vue';
 
 export default {
   name: 'Home',
   components: {
-    RandingPage,
+    LandingPage,
     MainPage,
+    ExpirationPage,
+    ErrorPage,
+    LoadingPage,
+    ForbiddenPage,
   },
+  data: () => ({
+  }),
   created() {
-    this.localCheck();
+    this.getAppInformation();
   },
   computed: {
-    certificationStatus() {
-      return this.$store.state.certificationStatus;
+    /* vuex : 앱 정보 */
+    APP_INFO() {
+      return this.$store.state.APP_INFO;
     },
-    joinSuccess() {
-      return this.$store.state.joinSuccess;
+    /* vuex : 페이지상태 */
+    pageStatus() {
+      return this.$store.state.pageStatus;
+    },
+    /* vuex : 전역 메시지 모달 */
+    globalMsgModal() {
+      return this.$store.state.globalMsgModal;
+    },
+    /* vuex : 전역 메시지 모달 내용 */
+    globalMsgContent() {
+      return this.$store.state.globalMsgContent;
     },
   },
   methods: {
-    /* vuex : 인증여부전환 (랜딩-메인) */
-    /* eslint-disable-next-line */
-    certificationStatusCng: function (bool) {
-      this.$store.commit('certificationStatusCng', bool);
+    testClick1() {
+      this.setUserData('김현순', '01084439554');
     },
-    /* vuex : 등록 메시지 */
-    /* eslint-disable-next-line */
-    joinSuccessCng: function (bool) {
-      this.$store.commit('joinSuccessCng', bool);
+    testClick2() {
+      this.localDel();
     },
-    async localCheck() {
-      const ret = await Storage.get({ key: 'certification' });
-      const certification = ret.value;
-      if (certification === 'confirmed') {
-        this.certificationStatusCng(true);
+    /* vuex : 앱 정보 업데이트 */
+    /* eslint-disable-next-line */
+    SET_APP_INFO_ROW: function (arr) {
+      this.$store.commit('SET_APP_INFO_ROW', arr);
+    },
+    /* vuex : 페이지상태전환 */
+    /* eslint-disable-next-line */
+    pageStatusCng: function (pageName) {
+      this.$store.commit('pageStatusCng', pageName);
+    },
+    /* vuex : 전역 메시지 모달 애니메이션 */
+    /* eslint-disable-next-line */
+    globalMsgAnimation: function (text) {
+      this.$store.commit('globalMsgAnimation', text);
+    },
+    /* vuex : 알람수신여부 전환 */
+    /* eslint-disable-next-line */
+    notificationStatusCng: function (bool) {
+      this.$store.commit('notificationStatusCng', bool);
+    },
+    /* 앱 정보 불러오기 */
+    getAppInformation() {
+      axios.get(`${this.APP_INFO.server}/app`, {
+        headers: {
+          apikey: this.APP_INFO.api_key,
+          appcode: this.APP_INFO.app_code,
+        },
+      })
+        .then((r) => {
+          if (r.data === 403) {
+            this.pageStatusCng('403');
+            this.globalMsgAnimation('등록되지 않은 앱입니다.');
+          } else {
+            const resultJSON = r.data[0];
+            const keys = Object.keys(resultJSON);
+            const values = Object.values(resultJSON);
+            for (let i = 0; i < keys.length; i += 1) {
+              this.SET_APP_INFO_ROW([keys[i], values[i]]);
+            }
+            this.setPageStatus();/* 유저 정보 확인하기 (로컬스토리지) */
+          }
+        })
+        .catch((e) => {
+          this.pageStatusCng('error');
+          console.log(e);
+        });
+    },
+    /* 유저 정보 확인하기 (로컬스토리지) */
+    async setPageStatus() {
+      const ret = await Storage.get({ key: `${this.APP_INFO.app_code}_auth` });
+      const val = JSON.parse(ret.value);
+      if (val === null) {
+        this.pageStatusCng('landing');
       } else {
-        this.certificationStatusCng(false);
+        /* 로컬스토리지에 정보가 있으면 번호 저장 + 사용자 만료 및 알림 여부 검사 */
+        this.SET_APP_INFO_ROW(['phone', val.phone]);
+        axios.get(`${this.APP_INFO.server}/expiration/${val.phone}`, {
+          headers: {
+            appcode: this.APP_INFO.app_code,
+            apikey: this.APP_INFO.api_key,
+          },
+        })
+          .then((r) => {
+            this.SET_APP_INFO_ROW(['exp_date', r.data.exp_date]);
+            this.SET_APP_INFO_ROW(['dday_cnt', r.data.dday_cnt]);
+            this.SET_APP_INFO_ROW(['notification', r.data.notification]);
+            if (r.data === 403) {
+              this.pageStatusCng('403');
+              this.globalMsgAnimation('등록되지 않은 앱입니다.');
+            } else if (r.data === 400) {
+              this.pageStatusCng('error');
+              this.globalMsgAnimation('유효하지 않은 유저입니다.');
+            } else if (r.data.result === false) {
+              this.pageStatusCng('expiration');
+              this.globalMsgAnimation(`만료일 : ${r.data.exp_date}`);
+            } else if (r.data.result === true) {
+              this.pageStatusCng('main');
+              this.globalMsgAnimation(`${val.name}(${val.phone})님, 반갑습니다.`);
+              this.notificationStatusCng(true);
+            } else {
+              this.pageStatusCng('error');
+              this.globalMsgAnimation('예기치 못한 오류가 발생하였습니다.');
+            }
+          })
+          .catch((e) => {
+            this.pageStatusCng('error');
+            console.log(e);
+          });
       }
     },
+    async setUserData(strName, strPhone) {
+      const data = {
+        name: strName,
+        phone: strPhone,
+      };
+      await Storage.set({
+        key: `${this.APP_INFO.app_code}_auth`,
+        value: JSON.stringify(data),
+      });
+    },
+    async notificationStatus() {
+      const ret = await Storage.get({ key: `${this.APP_INFO.app_code}_data` });
+      const val = JSON.parse(ret.value);
+      const result = val.notification;
+      return result;
+    },
+    async localSave(strName, strPhone, boolNotification) {
+      const data = {
+        name: strName,
+        phone: strPhone,
+        notification: boolNotification,
+      };
+      await Storage.set({
+        key: `${this.APP_INFO.app_code}_data`,
+        value: JSON.stringify(data),
+      });
+    },
+    async localLog() {
+      const ret = await Storage.get({ key: `${this.APP_INFO.app_code}_data` });
+      const val = JSON.parse(ret.value);
+      console.log(val);
+      console.log(val.name);
+      console.log(val.phone);
+      console.log(val.notification);
+    },
     async localDel() {
-      await Storage.remove({ key: 'certification' });
+      await Storage.remove({ key: `${this.APP_INFO.app_code}_data` });
+      await Storage.remove({ key: `${this.APP_INFO.app_code}_auth` });
     },
   },
 };

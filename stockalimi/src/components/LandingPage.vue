@@ -1,18 +1,22 @@
 <template>
-  <div class="randingOuterWrap" v-bind:class="pageState">
+  <div class="landingOuterWrap" v-bind:class="pageState">
     <!-- con 1 -->
-    <div class="randingContent con1">
+    <div class="landingContent con1">
       <div class="topWrap">
-        <p class="tit">{{ APP_NAME }}를<br/>시작합니다.</p>
+        <p class="tit">
+          {{ APP_INFO.app_name }}를
+          <br/>시작합니다.
+        </p>
       </div>
       <div class="bottomWrap">
         <div class="confirmCheckWrap" @click="confirmModalOpen();">
           <v-checkbox
             v-model="confirmCheck"
+            :color=APP_INFO.app_color
           ></v-checkbox>
-          <p class="msg">서비스 이용을 위한 <b>개인정보수집 약관</b>에 동의합니다.</p>
+          <p class="msg">서비스 이용을 위한 <b :style="[{ color: APP_INFO.app_color }, { borderColor: APP_INFO.app_color }]">개인정보수집 약관</b>에 동의합니다.</p>
         </div>
-        <button class="nextBtn" v-bind:class="{ 'on':confirmCheck }" @click="pageStateCng('con2', $event)">시작하기</button>
+        <button class="nextBtn" v-bind:class="{ 'on':confirmCheck }" v-bind:style=" confirmCheck ? `backgroundColor: ${APP_INFO.app_color};`:''" @click="pageStateCng('con2', $event)">시작하기</button>
       </div>
       <v-bottom-sheet v-model="confirmModal" duration="20000">
         <v-sheet
@@ -21,9 +25,9 @@
         >
           <div class="serviceConfirmContent">
             <p class="head">서비스 이용약관</p>
-            <p class="body">{{ APP_AGREED }}</p>
+            <p class="body">{{ APP_INFO.terms_conditions }}</p>
             <div class="btnWrap">
-              <button class="confirm" @click="confirmCheckAgree()">동의하기</button>
+              <button class="confirm" :style="{ backgroundColor: APP_INFO.app_color }" @click="confirmCheckAgree()">동의하기</button>
             </div>
           </div>
         </v-sheet>
@@ -31,7 +35,7 @@
     </div>
 
     <!-- con 2 -->
-    <div class="randingContent con2">
+    <div class="landingContent con2">
       <div class="topWrap">
         <p class="tit">회원정보를<br>입력해주세요.</p>
         <p class="sub">SMS로 인증문자가 발송됩니다.</p>
@@ -42,6 +46,7 @@
           label="이름"
           outlined
           @input="userInformationCheckFunc()"
+          :color=APP_INFO.app_color
         ></v-text-field>
         <v-text-field
           v-model="userPhone"
@@ -50,6 +55,7 @@
           hint="'-'을 제외한 숫자만 입력해주세요."
           type="number"
           outlined
+          :color=APP_INFO.app_color
         ></v-text-field>
       </div>
       <div class="bottomWrap">
@@ -57,25 +63,13 @@
         <button class="nextBtn"
                 v-bind:class="{ 'on':userInformationCheck }"
                 @click="[pageStateCng('con3', $event), smsCodeSendCheck($event)]"
+                v-bind:style=" userInformationCheck ? `backgroundColor: ${APP_INFO.app_color};`:''"
         >인증번호 발송</button>
       </div>
     </div>
 
     <!-- con 3 -->
-    <div class="randingContent con3">
-
-      <!-- con 3 : loading -->
-      <div class="con3InnerWrap" v-if="con3PageStage == 'loading'">
-        <div class="loadingWrap">
-          <v-progress-circular
-            :size="40"
-            :width="7"
-            color="blue"
-            indeterminate
-          ></v-progress-circular>
-          <p class="loadingMsg">회원정보를 확인중입니다.</p>
-        </div>
-      </div>
+    <div class="landingContent con3">
 
       <!-- con 3 : error -->
       <div class="con3InnerWrap" v-if="con3PageStage == 'error'">
@@ -83,7 +77,33 @@
           <img src="../assets/img/errorIcon.svg"/>
           <p class="errorTitle">오류가 발생하였습니다.</p>
           <p class="errorSub">불편을 드려 죄송합니다. 다시 시도해주세요.</p>
-          <button class="backBtn" @click="backEvent()">회원정보 입력으로 돌아가기</button>
+          <button class="backBtn" :style="{ backgroundColor: APP_INFO.app_color }" @click="backEvent()">회원정보 입력으로 돌아가기</button>
+        </div>
+      </div>
+
+      <!-- con 3 : loading -->
+      <div class="con3InnerWrap" v-else-if="con3PageStage == 'loading'">
+        <div class="loadingWrap">
+          <v-progress-circular
+            :size="40"
+            :width="7"
+            :color="APP_INFO.app_color"
+            indeterminate
+          ></v-progress-circular>
+          <p class="loadingMsg">회원정보를 확인중입니다.</p>
+        </div>
+      </div>
+
+      <!-- con 3 : contact -->
+      <div class="con3InnerWrap" v-else-if="con3PageStage == 'contact'">
+        <div class="loadingWrap">
+          <v-progress-circular
+            :size="40"
+            :width="7"
+            :color="APP_INFO.app_color"
+            indeterminate
+          ></v-progress-circular>
+          <p class="loadingMsg">문의를 등록중입니다.</p>
         </div>
       </div>
 
@@ -91,10 +111,10 @@
       <div class="con3InnerWrap" v-else-if="con3PageStage == 'reConfirm'">
         <div class="reConfirmWrap">
           <img src="../assets/img/userDupIcon.svg"/>
-          <p class="reConfirmTitle">입력하신 번호 <b>{{userPhone}}</b> 는<br>이미 등록된 번호입니다.</p>
-          <p class="reConfirmSub">입력하신 정보가 맞는지 확인해주세요. </p>
+          <p class="reConfirmTitle">입력하신 번호 <b :style="{ color: APP_INFO.app_color }">{{userPhone}}</b> 는<br>이미 등록된 번호입니다.</p>
+          <p class="reConfirmSub">입력하신 정보가 맞는지 확인해주세요.</p>
           <div class="btnWrap">
-            <button class="reConfirmBtn" @click="sendSms()">번호가 맞습니다.<br><b>SMS 인증 후 재등록</b></button>
+            <a v-bind:href="`tel:${APP_INFO.customer_service}`" :style="{ backgroundColor: APP_INFO.app_color }" class="reConfirmBtn" @click="contactSend()">번호가 맞습니다.<br><b>고객센터로 문의</b></a>
             <button class="backBtn" @click="backEvent()">잘못 입력했어요.<br><b>정보 다시 입력</b></button>
           </div>
         </div>
@@ -112,10 +132,11 @@
             type="number"
             v-model="smsCode"
             @input="codeCheck()"
+            :color="APP_INFO.app_color"
           ></v-otp-input>
           <div class="timeCntWrap">
             <div v-if="smsCodeResendBtn == true" class="btnWrap">
-              <button class="reSendBtn" @click="smsResend()">인증코드 재발송</button>
+              <button class="reSendBtn" :style="{ backgroundColor: APP_INFO.app_color }" @click="smsResend()">인증코드 재발송</button>
               <button class="reTypeBtn" @click="backEvent()">정보 다시입력</button>
             </div>
             <p class="timeCnt"><b>유효시간 : </b>{{smsTimeCnt}}</p>
@@ -129,18 +150,18 @@
         </div>
         <div class="bottomWrap">
           <p class="infoMsg">{{smsCodeMsg}}</p>
-          <button class="nextBtn" v-bind:class="{ 'on':smsCodeCheck }" @click="codeCheckFirebase($event)">인증</button>
+          <button class="nextBtn" v-bind:class="{ 'on':smsCodeCheck }" @click="codeCheckFirebase($event)" v-bind:style=" smsCodeCheck ? `backgroundColor: ${APP_INFO.app_color};`:''">인증</button>
         </div>
       </div>
     </div>
 
     <!-- con 4 -->
-    <div class="randingContent con4">
+    <div class="landingContent con4">
       <div class="loadingWrap">
         <v-progress-circular
           :size="40"
           :width="7"
-          color="blue"
+          :color="APP_INFO.app_color"
           indeterminate
         ></v-progress-circular>
         <p class="loadingMsg">인증코드를 확인중입니다.</p>
@@ -155,18 +176,15 @@ import { registerPlugin } from '@capacitor/core';
 import axios from 'axios';
 import moment from 'moment';
 import { Storage } from '@capacitor/storage';
-import appInformation from '../assets/app_information.json';
 
 const Echo = registerPlugin('Echo');
 
 export default {
-  name: 'RandingPage',
+  name: 'LandingPage',
   computed: {
-    certificationStatus() {
-      return this.$store.state.certificationStatus;
-    },
-    joinSuccess() {
-      return this.$store.state.joinSuccess;
+    /* vuex : 앱 정보 */
+    APP_INFO() {
+      return this.$store.state.APP_INFO;
     },
   },
   data: () => ({
@@ -184,22 +202,17 @@ export default {
     smsCodeResendBtn: false,
     smsCodeResendMsg: false,
     smsTimeCnt: '03:00',
-    updateUserInformaion: false,
-    APP_NAME: appInformation.name,
-    APP_PACKAGE: appInformation.package,
-    APP_SERVER: appInformation.server,
-    APP_AGREED: appInformation.agreed,
   }),
   methods: {
-    /* vuex : 인증여부전환 (랜딩-메인) */
+    /* vuex : 페이지상태전환 */
     /* eslint-disable-next-line */
-    certificationStatusCng: function (bool) {
-      this.$store.commit('certificationStatusCng', bool);
+    pageStatusCng: function (pageName) {
+      this.$store.commit('pageStatusCng', pageName);
     },
-    /* vuex : 등록 메시지 */
+    /* vuex : 전역 메시지 모달 애니메이션 */
     /* eslint-disable-next-line */
-    joinSuccessCng: function (bool) {
-      this.$store.commit('joinSuccessCng', bool);
+    globalMsgAnimation: function (text) {
+      this.$store.commit('globalMsgAnimation', text);
     },
     /* 페이지 슬라이드 위치 */
     pageStateCng(page, e) {
@@ -247,9 +260,10 @@ export default {
       if (e.target.classList.contains('on')) {
         this.con3PageStage = 'loading';
         setTimeout(() => {
-          axios.get(`${this.APP_SERVER}/phone/${this.userPhone}/${this.APP_NAME}`, {
+          axios.get(`${this.APP_INFO.server}/phone/${this.userPhone}`, {
             headers: {
-              appInformation: 'stockalimi',
+              appcode: this.APP_INFO.app_code,
+              apikey: this.APP_INFO.api_key,
             },
           })
             .then((r) => {
@@ -257,8 +271,11 @@ export default {
                 this.sendSms();
               } else if (r.data === false) { /* 번호가 있으면 */
                 this.con3PageStage = 'reConfirm';
-                this.updateUserInformaion = true;
-              } else { /* 에러 */
+              } else if (r.data === 403) {
+                this.initialState();
+                this.pageStateCng('403');
+                this.globalMsgAnimation('등록되지 않은 앱입니다.');
+              } else {
                 this.con3PageStage = 'error';
               }
             })
@@ -266,8 +283,41 @@ export default {
               this.con3PageStage = 'error';
               console.log(err);
             });
-        }, 2000);
+        }, 1500);
       }
+    },
+    /* 번호 중복인 경우 문의 등록 */
+    contactSend() {
+      this.con3PageStage = 'contact';
+      setTimeout(() => {
+        const data = {
+          name: this.userName,
+          phone: this.userPhone,
+        };
+        axios.post(`${this.APP_INFO.server}/contact`, data, {
+          headers: {
+            appcode: this.APP_INFO.app_code,
+            apikey: this.APP_INFO.api_key,
+          },
+        })
+          .then((r) => {
+            if (r.data === true) {
+              this.pageState = 'con1';
+              this.con3PageStage = 'loading';
+              this.globalMsgAnimation(`${this.userName}(${this.userPhone})님,<br>문의 요청이 등록되었습니다.<br>빠른 시일안에 연락드리겠습니다.`);
+            } else if (r.data === 403) {
+              this.initialState();
+              this.pageStateCng('403');
+              this.globalMsgAnimation('등록되지 않은 앱입니다.');
+            } else {
+              this.con3PageStage = 'error';
+            }
+          })
+          .catch((e) => {
+            this.con3PageStage = 'error';
+            console.log(e);
+          });
+      }, 1500);
     },
     /* sms 발송 */
     sendSms() {
@@ -335,42 +385,31 @@ export default {
           const data = {
             name: this.userName,
             phone: this.userPhone,
-            app_name: this.APP_NAME,
+            app_token: result.value,
+            app_valid: this.APP_INFO.default_valid,
           };
           const headers = {
             headers: {
-              'Content-Type': 'application/json',
-              apptoken: result.value,
+              appcode: this.APP_INFO.app_code,
+              apikey: this.APP_INFO.api_key,
             },
           };
-          /* 업데이트인지 확인 후 진행 */
-          if (this.updateUserInformaion === true) {
-            axios.put(`${this.APP_SERVER}/user`, data, headers)
-              .then((r) => {
-                if (r.data === true) {
-                  this.alarmOnEvent();
-                } else {
-                  this.con3PageStage = 'error';
-                }
-              })
-              .catch((e) => {
+          axios.post(`${this.APP_INFO.server}/user`, data, headers)
+            .then((r) => {
+              if (r.data === true) {
+                this.fcmSubcribeTopic();
+              } else if (r.data === 403) {
+                this.initialState();
+                this.pageStateCng('403');
+                this.globalMsgAnimation('등록되지 않은 앱입니다.');
+              } else {
                 this.con3PageStage = 'error';
-                console.log(e);
-              });
-          } else {
-            axios.post(`${this.APP_SERVER}/user`, data, headers)
-              .then((r) => {
-                if (r.data === true) {
-                  this.alarmOnEvent();
-                } else {
-                  this.con3PageStage = 'error';
-                }
-              })
-              .catch((e) => {
-                this.con3PageStage = 'error';
-                console.log(e);
-              });
-          }
+              }
+            })
+            .catch((e) => {
+              this.con3PageStage = 'error';
+              console.log(e);
+            });
         })
         .catch((err) => {
           this.con3PageStage = 'error';
@@ -388,7 +427,6 @@ export default {
       this.smsCodeResendBtn = '';
       this.smsCodeResendMsg = false;
       this.smsTimeCnt = '03:00';
-      this.updateUserInformaion = false;
       this.smsCodeMsg = '';
     },
     /* sms 인증번호 유효성검사 */
@@ -401,12 +439,12 @@ export default {
         this.smsCodeCheck = false;
       }
     },
-    /* 푸쉬알림 켜기 */
-    alarmOnEvent() {
-      FCM.subscribeTo({ topic: this.APP_PACKAGE })
+    /* FCM 알림 구독 */
+    fcmSubcribeTopic() {
+      FCM.subscribeTo({ topic: this.APP_INFO.app_code })
         .then(() => {
+          console.log('구독완료');
           this.joinComplete();
-          console.log('subscribed to topic');
         })
         .catch((e) => {
           console.log(e);
@@ -414,31 +452,21 @@ export default {
         });
     },
     /* 로컬스토리지에 인증 저장 */
-    async localSave() {
+    async setStorageAuth() {
+      const data = {
+        phone: this.userPhone,
+      };
       await Storage.set({
-        key: 'certification',
-        value: 'confirmed',
-      });
-    },
-    /* 로컬스토리지에 알람상태 저장 */
-    async localSaveAlarm(bool) {
-      await Storage.set({
-        key: 'alarmstatus',
-        value: String(bool),
+        key: `${this.APP_INFO.app_code}_auth`,
+        value: data,
       });
     },
     /* 가입 완료 */
     joinComplete() {
-      this.localSave();
-      this.localSaveAlarm(true);
+      this.setStorageAuth();
+      this.pageStatusCng('main');
+      this.globalMsgAnimation(`${this.userName}($)님, 환영합니다!`);
       this.initialState();
-      this.certificationStatusCng(true);
-      setTimeout(() => {
-        this.joinSuccessCng(true);
-      }, 0);
-      setTimeout(() => {
-        this.joinSuccessCng(false);
-      }, 3000);
     },
     /* 초기화 */
     initialState() {
@@ -456,7 +484,6 @@ export default {
       this.smsCodeResendBtn = false;
       this.smsCodeResendMsg = false;
       this.smsTimeCnt = '03:00';
-      this.updateUserInformaion = false;
       this.smsCodeMsg = '';
     },
   },
