@@ -204,6 +204,11 @@ export default {
     smsTimeCnt: '03:00',
   }),
   methods: {
+    /* vuex : 앱 정보 업데이트 */
+    /* eslint-disable-next-line */
+    SET_APP_INFO_ROW: function (arr) {
+      this.$store.commit('SET_APP_INFO_ROW', arr);
+    },
     /* vuex : 페이지상태전환 */
     /* eslint-disable-next-line */
     pageStatusCng: function (pageName) {
@@ -451,21 +456,24 @@ export default {
           this.con3PageStage = 'error';
         });
     },
-    /* 로컬스토리지에 인증 저장 */
+    /* 로컬스토리지에 인증 저장 + 전역 변수에 전화번호, 알림상태, dlfma 저장 */
     async setStorageAuth() {
+      this.SET_APP_INFO_ROW(['name', this.userName]);
+      this.SET_APP_INFO_ROW(['phone', this.userPhone]);
+      this.SET_APP_INFO_ROW(['notification', true]);
       const data = {
         phone: this.userPhone,
       };
       await Storage.set({
         key: `${this.APP_INFO.app_code}_auth`,
-        value: data,
+        value: JSON.stringify(data),
       });
     },
     /* 가입 완료 */
     joinComplete() {
       this.setStorageAuth();
       this.pageStatusCng('main');
-      this.globalMsgAnimation(`${this.userName}($)님, 환영합니다!`);
+      this.globalMsgAnimation(`${this.userName}(${this.APP_INFO.phone})님, 환영합니다!`);
       this.initialState();
     },
     /* 초기화 */

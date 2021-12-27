@@ -1,14 +1,14 @@
 <template>
   <div class="mainComponentWrap">
     <div class="pushModalWrap" v-bind:class="{ 'on':pushModal }">
-      <div class="pushModalBox">
-        <div class="icon">
-          <img src="../assets/img/notification.svg"/>
-        </div>
-        <div class="text">
+      <div class="pushModalBox" :style="{ borderColor: APP_INFO.app_color+80 }">
+        <div class="top">
+          <div class="icon" :style="{ backgroundColor: APP_INFO.app_color }">
+            <img src="../assets/img/notification.svg"/>
+          </div>
           <p class="tit">{{ pushData.title }}</p>
-          <p class="body">{{ pushData.body }}</p>
         </div>
+        <p class="body">{{ pushData.body }}</p>
       </div>
     </div>
     <div class="headerBar">
@@ -20,10 +20,10 @@
       </div>
       <div
         class="alarmStatus"
-        @click="alarmSet"
+        @click="setNotification"
       >
-        <p v-bind:class="[ notificationStatus ? 'on' : 'off' ]">
-          {{`${notificationStatus?'알림 ON':'알림 OFF'}`}}
+        <p v-bind:class="[ APP_INFO.notification ? 'on' : 'off' ]">
+          {{`${APP_INFO.notification?'알림 ON':'알림 OFF'}`}}
         </p>
 
         <v-container
@@ -31,7 +31,7 @@
           fluid
         >
           <v-switch
-            v-model="notificationStatus"
+            v-model="APP_INFO.notification"
           ></v-switch>
         </v-container>
       </div>
@@ -40,7 +40,7 @@
     <div class="toggleBtn"
         :style="{ backgroundColor : APP_INFO.app_color }"
         :class="{ 'on': getMainPageStatus('stockData') }"
-        @click="gotoStockData()"
+        @click="gotoNotiList()"
     >
       <img src="../assets/img/notiWhite.svg"/>
     </div>
@@ -48,7 +48,7 @@
     <div class="toggleBtn"
         :style="{ backgroundColor : APP_INFO.app_color }"
         :class="{ 'on': getMainPageStatus('notiList') }"
-        @click="gotoNotiList('')"
+        @click="gotoStockData()"
     >
       <img src="../assets/img/stockWhite.svg"/>
     </div>
@@ -71,7 +71,7 @@
           <img src="../assets/img/errorIcon.svg"/>
           <p class="errorTitle">오류가 발생하였습니다.</p>
           <p class="errorSub">불편을 드려 죄송합니다. 다시 시도해주세요.</p>
-          <button class="backBtn" @click="refreshClick($event)">다시 시도</button>
+          <button class="backBtn" :style="{ backgroundColor : APP_INFO.app_color }" @click="refreshClick($event)">다시 시도</button>
         </div>
       </div>
       <div v-else-if="stockData" class="cardWrap">
@@ -144,8 +144,43 @@
       <div class="refreshBtn" @click="refreshClick($event)">
         <img src="../assets/img/refresh.svg"/>
       </div>
+      <div v-if="notiList==false" class="mainProgressWrap">
+        <v-progress-circular
+          :size="40"
+          :width="7"
+          :color="APP_INFO.app_color"
+          indeterminate
+        ></v-progress-circular>
+        <p class="loadingMsg">알림기록을 불러오는중입니다.</p>
+      </div>
+      <div v-else-if="notiList=='err'" class="mainProgressWrap">
+        <div class="errorWrap">
+          <img src="../assets/img/errorIcon.svg"/>
+          <p class="errorTitle">오류가 발생하였습니다.</p>
+          <p class="errorSub">불편을 드려 죄송합니다. 다시 시도해주세요.</p>
+          <button class="backBtn" :style="{ backgroundColor : APP_INFO.app_color }" @click="refreshClick($event)">다시 시도</button>
+        </div>
+      </div>
+      <div v-else-if="notiList">
+        <div class="notiListWrap">
+          <p class="h1">알림기록</p>
+          <div v-if="Object.keys(notiListData).length == 0">
+            <p class="noListMsg">아직 수신된 알림이 없습니다.</p>
+          </div>
+          <div v-else>
+            <div v-for="(value, key) in notiListData" :key="key" class="row">
+              <div class="top">
+                <p class="tit">{{value.title}}</p>
+                <p class="date">{{ dateToMoment(value.push_date) }}</p>
+              </div>
+              <pre class="content">{{value.body}}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <v-bottom-sheet v-model="alramOffMsg" persistent class="noAlarmWrap">
+    <!--알림 끄기 확인 모달-->
+    <v-bottom-sheet v-model="notificationOffConfirm" persistent class="noAlarmWrap">
       <v-sheet
         class="noAlarmCon"
         height="auto"
@@ -158,13 +193,13 @@
         <div class="noAlarmBtnWrap">
           <v-btn
             class="off"
-            @click="alarmOffEvent"
+            @click="notificationOffConfirm = false, notificationOffEvent()"
           >
             알림 끄기
           </v-btn>
           <v-btn
             class="cancle"
-            @click="alramOffMsg = false, notificationStatus(true)"
+            @click="notificationOffConfirm = false, notificationStatusCng(true)"
           >
             취소
           </v-btn>
@@ -176,9 +211,9 @@
 
 <script>
 import axios from 'axios';
-import { Storage } from '@capacitor/storage';
 import { FCM } from '@capacitor-community/fcm';
 import { io } from 'socket.io-client';
+import moment from 'moment';
 
 export default {
   name: 'Main',
@@ -187,130 +222,284 @@ export default {
     APP_INFO() {
       return this.$store.state.APP_INFO;
     },
-    notificationStatus() {
-      return this.$store.state.notificationStatus;
-    },
   },
   data: () => ({
-    mainPageStatus: 'notiList',
+    mainPageStatus: 'stockData',
     stockData: false,
     notiList: false,
+    notiListData: [],
     kospiDnUp: '',
     kosdaqDnUp: '',
-    alramOffMsg: false,
+    notificationOffConfirm: false,
     pushModal: false,
     pushData: { title: '', body: '' },
   }),
   methods: {
-    /* vuex : 알람수신여부 전환 */
+    /* vuex : 페이지상태전환 */
     /* eslint-disable-next-line */
-    notificationStatusCng: function (bool) {
-      this.$store.commit('notificationStatusCng', bool);
+    pageStatusCng: function (pageName) {
+      this.$store.commit('pageStatusCng', pageName);
     },
+    /* vuex : 앱 정보 업데이트 (알람용) */
+    /* eslint-disable-next-line */
+    SET_APP_INFO_ROW: function (arr) {
+      this.$store.commit('SET_APP_INFO_ROW', arr);
+    },
+    /* vuex : 전역 메시지 모달 애니메이션 */
+    /* eslint-disable-next-line */
+    globalMsgAnimation: function (text) {
+      this.$store.commit('globalMsgAnimation', text);
+    },
+    /* 주식정보 - 알림기록 화면상태 가져오기 */
     getMainPageStatus(status) {
       return this.mainPageStatus === status;
     },
+    /* 주식정보 - 알림기록 화면상태 전환 */
     setMainPageStatus(status) {
       this.mainPageStatus = status;
     },
-    getNotiList() {
-      this.stockData = false;
-      axios.get(`${this.APP_INFO.server}/notification/${this.APP_INFO.phone}`, {
-        headers: {
-          apikey: this.APP_INFO.api_key,
-          appcode: this.APP_INFO.app_code,
-        },
-      })
-        .then((r) => {
-          console.log(r);
-        })
-        .catch((e) => {
-          this.stockData = 'err';
-          console.log(e);
-        });
+    /* 알림 ON OFF */
+    notificationStatusCng(bool) {
+      this.SET_APP_INFO_ROW(['notification', bool]);
     },
+    /* 알림기록 가져오기 */
+    getNotiList() {
+      this.notiList = false;
+      setTimeout(() => {
+        axios.get(`${this.APP_INFO.server}/notification/${this.APP_INFO.phone}`, {
+          headers: {
+            apikey: this.APP_INFO.api_key,
+            appcode: this.APP_INFO.app_code,
+          },
+        })
+          .then((r) => {
+            this.notiList = true;
+            this.notiListData = [];
+            const keys = Object.keys(JSON.parse(JSON.stringify(r.data)));
+            const values = Object.values(JSON.parse(JSON.stringify(r.data)));
+            for (let i = 0; i < keys.length; i += 1) {
+              this.notiListData = [
+                ...this.notiListData,
+                values[i],
+              ];
+            }
+          })
+          .catch((e) => {
+            this.notiList = 'err';
+            console.log(e);
+          });
+      }, 600);
+    },
+    /* 주식정보 가져오기 */
     getStockData() {
       this.stockData = false;
-      axios.get(`${this.APP_INFO.server}/stock`, {
+      setTimeout(() => {
+        axios.get(`${this.APP_INFO.server}/stock`, {
+          headers: {
+            apikey: this.APP_INFO.api_key,
+            appcode: this.APP_INFO.app_code,
+          },
+        })
+          .then((r) => {
+            this.stockData = r.data;
+            if (this.stockData.kospiData.daytodayType === '하락') {
+              this.kospiDnUp = 'dn';
+            } else if (this.stockData.kospiData.daytodayType === '상승') {
+              this.kospiDnUp = 'up';
+            } else {
+              this.kospiDnUp = '';
+            }
+            if (this.stockData.kosdaqData.daytodayType === '하락') {
+              this.kosdaqDnUp = 'dn';
+            } else if (this.stockData.kosdaqData.daytodayType === '상승') {
+              this.kosdaqDnUp = 'up';
+            } else {
+              this.kosdaqDnUp = '';
+            }
+          })
+          .catch((e) => {
+            this.stockData = 'err';
+            console.log(e);
+          });
+      }, 600);
+    },
+    /* 알림기록 화면으로 이동 */
+    gotoNotiList() {
+      axios.get(`${this.APP_INFO.server}/expiration/${this.APP_INFO.phone}`, {
+        headers: {
+          appcode: this.APP_INFO.app_code,
+          apikey: this.APP_INFO.api_key,
+        },
+      })
+        .then((r) => {
+          if (r.data === 403) {
+            this.pageStatusCng('403');
+            this.globalMsgAnimation('등록되지 않은 앱입니다.');
+          } else if (r.data === 400) {
+            this.pageStatusCng('error');
+            this.globalMsgAnimation('유효하지 않은 유저입니다.');
+          } else if (r.data.result === false) {
+            this.pageStatusCng('expiration');
+          } else if (r.data.result === true) {
+            this.mainPageStatus = 'notiList';
+            this.getNotiList();
+          } else {
+            this.pageStatusCng('error');
+            this.globalMsgAnimation('예기치 못한 오류가 발생하였습니다.');
+          }
+        })
+        .catch((e) => {
+          this.pageStatusCng('error');
+          console.log(e);
+        });
+    },
+    /* 주식정보 화면으로 이동 */
+    gotoStockData() {
+      axios.get(`${this.APP_INFO.server}/expiration/${this.APP_INFO.phone}`, {
+        headers: {
+          appcode: this.APP_INFO.app_code,
+          apikey: this.APP_INFO.api_key,
+        },
+      })
+        .then((r) => {
+          if (r.data === 403) {
+            this.pageStatusCng('403');
+            this.globalMsgAnimation('등록되지 않은 앱입니다.');
+          } else if (r.data === 400) {
+            this.pageStatusCng('error');
+            this.globalMsgAnimation('유효하지 않은 유저입니다.');
+          } else if (r.data.result === false) {
+            this.pageStatusCng('expiration');
+          } else if (r.data.result === true) {
+            this.mainPageStatus = 'stockData';
+            this.getStockData();
+          } else {
+            this.pageStatusCng('error');
+            this.globalMsgAnimation('예기치 못한 오류가 발생하였습니다.');
+          }
+        })
+        .catch((e) => {
+          this.pageStatusCng('error');
+          console.log(e);
+        });
+    },
+    /* 새로고침 이벤트 */
+    refresh() {
+      axios.get(`${this.APP_INFO.server}/expiration/${this.APP_INFO.phone}`, {
+        headers: {
+          appcode: this.APP_INFO.app_code,
+          apikey: this.APP_INFO.api_key,
+        },
+      })
+        .then((r) => {
+          if (r.data === 403) {
+            this.pageStatusCng('403');
+            this.globalMsgAnimation('등록되지 않은 앱입니다.');
+          } else if (r.data === 400) {
+            this.pageStatusCng('error');
+            this.globalMsgAnimation('유효하지 않은 유저입니다.');
+          } else if (r.data.result === false) {
+            this.pageStatusCng('expiration');
+          } else if (r.data.result === true) {
+            if (this.mainPageStatus === 'notiList') {
+              this.getNotiList();
+            } else if (this.mainPageStatus === 'stockData') {
+              this.getStockData();
+            }
+          } else {
+            this.pageStatusCng('error');
+            this.globalMsgAnimation('예기치 못한 오류가 발생하였습니다.');
+          }
+        })
+        .catch((e) => {
+          this.pageStatusCng('error');
+          console.log(e);
+        });
+    },
+    /* 새로고침 버튼 클릭 */
+    refreshClick(e) {
+      e.target.classList.add('on');
+      this.refresh();
+      setTimeout(() => {
+        e.target.classList.remove('on');
+      }, 600);
+    },
+    /* 날짜 변환 */
+    dateToMoment(date) {
+      const momentDate = moment(date).format('YYYY-MM-DD HH:mm');
+      return momentDate;
+    },
+    setNotification() {
+      if (!this.APP_INFO.notification) {
+        this.notificationOffConfirm = true;
+      } else {
+        this.notificationOnEvent();
+      }
+    },
+    notificationOnEvent() {
+      axios.put(`${this.APP_INFO.server}/user/notification`, {
+        phone: this.APP_INFO.phone,
+        bool: 'true',
+      },
+      {
         headers: {
           apikey: this.APP_INFO.api_key,
           appcode: this.APP_INFO.app_code,
         },
       })
         .then((r) => {
-          this.stockData = r.data;
-          if (this.stockData.kospiData.daytodayType === '하락') {
-            this.kospiDnUp = 'dn';
-          } else if (this.stockData.kospiData.daytodayType === '상승') {
-            this.kospiDnUp = 'up';
+          if (r.data === 400) {
+            this.globalMsgAnimation('오류가 발생하였습니다. 다시 시도해주세요.');
+            this.notificationStatusCng(false);
           } else {
-            this.kospiDnUp = '';
-          }
-          if (this.stockData.kosdaqData.daytodayType === '하락') {
-            this.kosdaqDnUp = 'dn';
-          } else if (this.stockData.kosdaqData.daytodayType === '상승') {
-            this.kosdaqDnUp = 'up';
-          } else {
-            this.kosdaqDnUp = '';
+            FCM.subscribeTo({ topic: this.APP_INFO.app_code })
+              .then(() => {
+                console.log('subscribed to topic');
+                this.notificationStatusCng(true);
+              })
+              .catch(() => {
+                this.globalMsgAnimation('오류가 발생하였습니다. 다시 시도해주세요.');
+                this.notificationStatusCng(false);
+              });
           }
         })
         .catch((e) => {
-          this.stockData = 'err';
+          this.globalMsgAnimation('오류가 발생하였습니다. 다시 시도해주세요.');
+          this.notificationStatusCng(false);
           console.log(e);
         });
     },
-    refresh() {
-      if (this.mainPageStatus === 'notiList') {
-        this.getNotiList();
-      } else if (this.mainPageStatus === 'stockData') {
-        this.getStockData();
-      }
-    },
-    refreshClick(e) {
-      e.target.classList.add('on');
-      setTimeout(() => {
-        this.refresh();
-        e.target.classList.remove('on');
-      }, 800);
-    },
-    alarmSet() {
-      if (!this.alarmStatus) {
-        this.alramOffMsg = true;
-      } else {
-        this.alarmOnEvent();
-      }
-    },
-    alarmOnEvent() {
-      FCM.subscribeTo({ topic: this.APP_INFO.app_code })
-        .then(() => {
-          console.log('subscribed to topic');
-          this.alarmStatus = true;
-          this.localSaveAlarm(true);
-        });
-    },
-    /* 로컬스토리지에 알람상태 저장 */
-    async localSaveAlarm(bool) {
-      await Storage.set({
-        key: 'alarmstatus',
-        value: String(bool),
-      });
-    },
-    /* 로컬스토리지 확인 */
-    async localCheckAlarm() {
-      const ret = await Storage.get({ key: 'alarmstatus' });
-      const status = ret.value;
-      if (status === 'true') {
-        this.alarmStatus = true;
-      } else {
-        this.alarmStatus = false;
-      }
-    },
-    alarmOffEvent() {
-      FCM.unsubscribeFrom({ topic: this.APP_INFO.app_name })
-        .then(() => {
-          console.log('unsubscribed from topic');
-          this.alramOffMsg = false;
-          this.alarmStatus = false;
+    notificationOffEvent() {
+      axios.put(`${this.APP_INFO.server}/user/notification`, {
+        phone: this.APP_INFO.phone,
+        bool: 'false',
+      },
+      {
+        headers: {
+          apikey: this.APP_INFO.api_key,
+          appcode: this.APP_INFO.app_code,
+        },
+      })
+        .then((r) => {
+          if (r.data === 400) {
+            this.globalMsgAnimation('오류가 발생하였습니다. 다시 시도해주세요.');
+            this.notificationStatusCng(true);
+          } else {
+            FCM.unsubscribeFrom({ topic: this.APP_INFO.app_code })
+              .then(() => {
+                console.log('unsubscribed from topic');
+                this.notificationStatusCng(false);
+              })
+              .catch(() => {
+                this.globalMsgAnimation('오류가 발생하였습니다. 다시 시도해주세요.');
+                this.notificationStatusCng(true);
+              });
+          }
+        })
+        .catch((e) => {
+          this.globalMsgAnimation('오류가 발생하였습니다. 다시 시도해주세요.');
+          this.notificationStatusCng(true);
+          console.log(e);
         });
     },
     pushAnimate() {
@@ -325,11 +514,11 @@ export default {
     },
   },
   created() {
-    this.localCheckAlarm();
     this.refresh();
     const socket = io.connect(this.APP_INFO.server);
-    socket.on(this.APP_PACKAGE, (data) => {
-      if (this.alarmStatus === true && this.pushData.title === '') {
+    socket.on(this.APP_INFO.app_code, (data) => {
+      if (this.APP_INFO.notification === true && this.pushData.title === '') {
+        this.refresh();
         this.pushData.title = data.title;
         this.pushData.body = data.body;
         this.pushAnimate();

@@ -10,7 +10,6 @@ export default new Vuex.Store({
     pageStatus: 'loading',
     globalMsgModal: false,
     globalMsgContent: '',
-    notificationStatus: false,
   },
   mutations: {
     SET_APP_INFO_ROW(state, arr) {
@@ -39,9 +38,6 @@ export default new Vuex.Store({
           state.globalMsgContent = '';
         }, 4500);
       }
-    },
-    notificationStatusCng(state, bool) {
-      state.notificationStatus = bool;
     },
   },
 });

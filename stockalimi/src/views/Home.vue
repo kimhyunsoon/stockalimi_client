@@ -1,7 +1,5 @@
 <template>
   <div class="homeWrap" v-bind:class="pageStatus">
-    <!-- <v-btn @click="testClick1()" class="testBtn testBtn1">testClick1</v-btn>
-    <v-btn @click="testClick2()" class="testBtn testBtn2">testClick2</v-btn> -->
     <!-- 전역 메시지 -->
     <div class="globalMsgWrap" v-bind:class="pageStatus">
       <div class="globalMsg" v-bind:class="{ 'on':globalMsgModal }" v-html="globalMsgContent"></div>
@@ -78,7 +76,7 @@ export default {
   },
   methods: {
     testClick1() {
-      this.setUserData('김현순', '01084439554');
+      this.SET_APP_INFO_ROW(['phone', '01084439554']);
     },
     testClick2() {
       this.localDel();
@@ -97,11 +95,6 @@ export default {
     /* eslint-disable-next-line */
     globalMsgAnimation: function (text) {
       this.$store.commit('globalMsgAnimation', text);
-    },
-    /* vuex : 알람수신여부 전환 */
-    /* eslint-disable-next-line */
-    notificationStatusCng: function (bool) {
-      this.$store.commit('notificationStatusCng', bool);
     },
     /* 앱 정보 불러오기 */
     getAppInformation() {
@@ -146,6 +139,7 @@ export default {
           },
         })
           .then((r) => {
+            this.SET_APP_INFO_ROW(['name', r.data.name]);
             this.SET_APP_INFO_ROW(['exp_date', r.data.exp_date]);
             this.SET_APP_INFO_ROW(['dday_cnt', r.data.dday_cnt]);
             this.SET_APP_INFO_ROW(['notification', r.data.notification]);
@@ -157,11 +151,9 @@ export default {
               this.globalMsgAnimation('유효하지 않은 유저입니다.');
             } else if (r.data.result === false) {
               this.pageStatusCng('expiration');
-              this.globalMsgAnimation(`만료일 : ${r.data.exp_date}`);
             } else if (r.data.result === true) {
               this.pageStatusCng('main');
-              this.globalMsgAnimation(`${val.name}(${val.phone})님, 반갑습니다.`);
-              this.notificationStatusCng(true);
+              this.globalMsgAnimation(`${r.data.name}(${val.phone})님, 반갑습니다.`);
             } else {
               this.pageStatusCng('error');
               this.globalMsgAnimation('예기치 못한 오류가 발생하였습니다.');
@@ -172,45 +164,6 @@ export default {
             console.log(e);
           });
       }
-    },
-    async setUserData(strName, strPhone) {
-      const data = {
-        name: strName,
-        phone: strPhone,
-      };
-      await Storage.set({
-        key: `${this.APP_INFO.app_code}_auth`,
-        value: JSON.stringify(data),
-      });
-    },
-    async notificationStatus() {
-      const ret = await Storage.get({ key: `${this.APP_INFO.app_code}_data` });
-      const val = JSON.parse(ret.value);
-      const result = val.notification;
-      return result;
-    },
-    async localSave(strName, strPhone, boolNotification) {
-      const data = {
-        name: strName,
-        phone: strPhone,
-        notification: boolNotification,
-      };
-      await Storage.set({
-        key: `${this.APP_INFO.app_code}_data`,
-        value: JSON.stringify(data),
-      });
-    },
-    async localLog() {
-      const ret = await Storage.get({ key: `${this.APP_INFO.app_code}_data` });
-      const val = JSON.parse(ret.value);
-      console.log(val);
-      console.log(val.name);
-      console.log(val.phone);
-      console.log(val.notification);
-    },
-    async localDel() {
-      await Storage.remove({ key: `${this.APP_INFO.app_code}_data` });
-      await Storage.remove({ key: `${this.APP_INFO.app_code}_auth` });
     },
   },
 };
