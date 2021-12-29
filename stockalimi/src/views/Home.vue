@@ -28,6 +28,8 @@
     <div v-else-if="pageStatus === '403'">
       <forbidden-page/>
     </div>
+    <!-- <v-btn @click="localLog()">스토리지 로그</v-btn>
+    <v-btn @click="localDel()">스토리지 삭제</v-btn> -->
   </div>
 </template>
 
@@ -75,12 +77,6 @@ export default {
     },
   },
   methods: {
-    testClick1() {
-      this.SET_APP_INFO_ROW(['phone', '01084439554']);
-    },
-    testClick2() {
-      this.localDel();
-    },
     /* vuex : 앱 정보 업데이트 */
     /* eslint-disable-next-line */
     SET_APP_INFO_ROW: function (arr) {
@@ -164,6 +160,18 @@ export default {
             console.log(e);
           });
       }
+    },
+    async localDel() {
+      await Storage.remove({ key: `${this.APP_INFO.app_code}_data` });
+      await Storage.remove({ key: `${this.APP_INFO.app_code}_auth` });
+    },
+    async localLog() {
+      const data = await Storage.get({ key: `${this.APP_INFO.app_code}_data` });
+      const auth = await Storage.get({ key: `${this.APP_INFO.app_code}_auth` });
+      const dataVal = JSON.parse(data.value);
+      const authVal = JSON.parse(auth.value);
+      console.log(dataVal);
+      console.log(authVal);
     },
   },
 };

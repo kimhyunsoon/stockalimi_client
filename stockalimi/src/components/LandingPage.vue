@@ -114,7 +114,20 @@
           <p class="reConfirmTitle">입력하신 번호 <b :style="{ color: APP_INFO.app_color }">{{userPhone}}</b> 는<br>이미 등록된 번호입니다.</p>
           <p class="reConfirmSub">입력하신 정보가 맞는지 확인해주세요.</p>
           <div class="btnWrap">
-            <a v-bind:href="`tel:${APP_INFO.customer_service}`" :style="{ backgroundColor: APP_INFO.app_color }" class="reConfirmBtn" @click="contactSend()">번호가 맞습니다.<br><b>고객센터로 문의</b></a>
+            <button
+              v-if="reconfirmState == 'expiration'"
+              :style="{ backgroundColor: APP_INFO.app_color }"
+              class="reConfirmBtn"
+              @click="contactSend()"
+            >번호가 맞습니다.<br><b>기간연장 등 문의 신청</b>
+            </button>
+            <button
+              v-if="reconfirmState == 'reauth'"
+              :style="{ backgroundColor: APP_INFO.app_color }"
+              class="reConfirmBtn"
+              @click="reAuthEvent()"
+            >번호가 맞습니다.<br><b>재인증 후 로그인</b>
+            </button>
             <button class="backBtn" @click="backEvent()">잘못 입력했어요.<br><b>정보 다시 입력</b></button>
           </div>
         </div>
@@ -202,6 +215,8 @@ export default {
     smsCodeResendBtn: false,
     smsCodeResendMsg: false,
     smsTimeCnt: '03:00',
+    reconfirmState: 'reauth',
+    reauthState: false,
   }),
   methods: {
     /* vuex : 앱 정보 업데이트 */
@@ -265,6 +280,7 @@ export default {
       if (e.target.classList.contains('on')) {
         this.con3PageStage = 'loading';
         setTimeout(() => {
+          /* 중복 번호 확인 */
           axios.get(`${this.APP_INFO.server}/phone/${this.userPhone}`, {
             headers: {
               appcode: this.APP_INFO.app_code,
@@ -274,8 +290,12 @@ export default {
             .then((r) => {
               if (r.data === true) { /* 번호가 없으면 */
                 this.sendSms();
-              } else if (r.data === false) { /* 번호가 있으면 */
+              } else if (r.data === 'expiration') { /* 번호가 있고 만료일이 지났으면 */
                 this.con3PageStage = 'reConfirm';
+                this.reconfirmState = 'expiration';
+              } else if (r.data === 'reauth') { /* 번호가 있고 만료일이 남았으면 */
+                this.con3PageStage = 'reConfirm';
+                this.reconfirmState = 'reauth';
               } else if (r.data === 403) {
                 this.initialState();
                 this.pageStateCng('403');
@@ -291,7 +311,7 @@ export default {
         }, 1500);
       }
     },
-    /* 번호 중복인 경우 문의 등록 */
+    /* 번호 중복이며 만료되었을 경우 문의 등록 */
     contactSend() {
       this.con3PageStage = 'contact';
       setTimeout(() => {
@@ -323,6 +343,11 @@ export default {
             console.log(e);
           });
       }, 1500);
+    },
+    /* 번호 중복이며 만료되지 않았을 경우 재인증 후 로그인 */
+    reAuthEvent() {
+      this.reauthState = true;
+      this.sendSms();
     },
     /* sms 발송 */
     sendSms() {
@@ -399,22 +424,42 @@ export default {
               apikey: this.APP_INFO.api_key,
             },
           };
-          axios.post(`${this.APP_INFO.server}/user`, data, headers)
-            .then((r) => {
-              if (r.data === true) {
-                this.fcmSubcribeTopic();
-              } else if (r.data === 403) {
-                this.initialState();
-                this.pageStateCng('403');
-                this.globalMsgAnimation('등록되지 않은 앱입니다.');
-              } else {
+          /* 재인증일 경우 이름과 앱토큰만 업데이트 */
+          if (this.reauthState === true) {
+            axios.put(`${this.APP_INFO.server}/user`, data, headers)
+              .then((r) => {
+                if (r.data === true) {
+                  this.fcmSubcribeTopic();
+                } else if (r.data === 403) {
+                  this.initialState();
+                  this.pageStateCng('403');
+                  this.globalMsgAnimation('등록되지 않은 앱입니다.');
+                } else {
+                  this.con3PageStage = 'error';
+                }
+              })
+              .catch((e) => {
                 this.con3PageStage = 'error';
-              }
-            })
-            .catch((e) => {
-              this.con3PageStage = 'error';
-              console.log(e);
-            });
+                console.log(e);
+              });
+          } else {
+            axios.post(`${this.APP_INFO.server}/user`, data, headers)
+              .then((r) => {
+                if (r.data === true) {
+                  this.fcmSubcribeTopic();
+                } else if (r.data === 403) {
+                  this.initialState();
+                  this.pageStateCng('403');
+                  this.globalMsgAnimation('등록되지 않은 앱입니다.');
+                } else {
+                  this.con3PageStage = 'error';
+                }
+              })
+              .catch((e) => {
+                this.con3PageStage = 'error';
+                console.log(e);
+              });
+          }
         })
         .catch((err) => {
           this.con3PageStage = 'error';
@@ -433,6 +478,7 @@ export default {
       this.smsCodeResendMsg = false;
       this.smsTimeCnt = '03:00';
       this.smsCodeMsg = '';
+      this.reauthState = false;
     },
     /* sms 인증번호 유효성검사 */
     codeCheck() {
@@ -456,7 +502,7 @@ export default {
           this.con3PageStage = 'error';
         });
     },
-    /* 로컬스토리지에 인증 저장 + 전역 변수에 전화번호, 알림상태, dlfma 저장 */
+    /* 로컬스토리지에 인증 저장 + 전역 변수에 전화번호, 알림상태, 이름 저장 */
     async setStorageAuth() {
       this.SET_APP_INFO_ROW(['name', this.userName]);
       this.SET_APP_INFO_ROW(['phone', this.userPhone]);
@@ -493,6 +539,7 @@ export default {
       this.smsCodeResendMsg = false;
       this.smsTimeCnt = '03:00';
       this.smsCodeMsg = '';
+      this.reauthState = false;
     },
   },
   created() {

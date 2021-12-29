@@ -1,13 +1,5 @@
 <template>
   <div class="mainComponentWrap">
-    <div class="headerBar">
-      <div class="mainTitle">
-        <p>{{ APP_INFO.app_name }}</p>
-        <div class="icon" :style="{ backgroundColor: APP_INFO.app_color }">
-          <img src="../assets/img/notification.svg"/>
-        </div>
-      </div>
-    </div>
     <div class="mainProgressWrap">
       <div class="errorWrap">
         <img src="../assets/img/errorIcon.svg"/>

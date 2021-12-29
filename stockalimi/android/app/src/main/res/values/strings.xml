@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">stockalimi</string>
-    <string name="title_activity_main">stockalimi</string>
+    <string name="app_name">급등주알리미</string>
+    <string name="title_activity_main">급등주알리미</string>
     <string name="package_name">com.stock.alimi</string>
     <string name="custom_url_scheme">com.stock.alimi</string>
 </resources>

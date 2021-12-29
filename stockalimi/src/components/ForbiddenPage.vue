@@ -1,5 +1,5 @@
 <template>
-  <div class="mainComponentWrap">
+  <div class="landingOuterWrap">
     <div class="mainProgressWrap">
       <div class="errorWrap">
         <img src="../assets/img/errorIcon.svg"/>
