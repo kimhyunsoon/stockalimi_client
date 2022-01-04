@@ -36,6 +36,11 @@ public class EchoPlugin extends Plugin {
     String TAG = "echoPlugin";
     boolean sent;
 
+    public void goNotificationList() {
+        JSObject page = new JSObject();
+        page.put("page", "notification");
+        this.notifyListeners("page", page);
+    }
     @Override
     public void load() {
         mAuth = FirebaseAuth.getInstance();

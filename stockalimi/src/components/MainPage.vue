@@ -1,6 +1,6 @@
 <template>
   <div class="mainComponentWrap">
-    <div class="pushModalWrap" v-bind:class="{ 'on':pushModal }">
+    <div class="pushModalWrap" v-bind:class="{ 'on':pushModal }" @click="gotoNotiList()">
       <div class="pushModalBox" :style="{ borderColor: APP_INFO.app_color+80 }">
         <div class="top">
           <div class="icon" :style="{ backgroundColor: APP_INFO.app_color }">
@@ -32,6 +32,7 @@
         >
           <v-switch
             v-model="APP_INFO.notification"
+            :color="APP_INFO.app_color"
           ></v-switch>
         </v-container>
       </div>
@@ -39,7 +40,7 @@
     <!--토글 버튼: 주식정보-->
     <div class="toggleBtn"
         :style="{ backgroundColor : APP_INFO.app_color }"
-        :class="{ 'on': getMainPageStatus('stockData') }"
+        :class="[{ 'on': getMainPageStatus('stockData') }, { 'left': APP_INFO.ui_type === 1 }]"
         @click="gotoNotiList()"
     >
       <img src="../assets/img/notiWhite.svg"/>
@@ -47,14 +48,14 @@
     <!--토글 버튼: 알림목록-->
     <div class="toggleBtn"
         :style="{ backgroundColor : APP_INFO.app_color }"
-        :class="{ 'on': getMainPageStatus('notiList') }"
+        :class="[{ 'on': getMainPageStatus('notiList') }, { 'left': APP_INFO.ui_type === 1 }]"
         @click="gotoStockData()"
     >
       <img src="../assets/img/stockWhite.svg"/>
     </div>
     <!--페이지상태: 주식정보-->
     <div v-if="mainPageStatus==='stockData'">
-      <div class="refreshBtn" @click="refreshClick($event)">
+      <div class="refreshBtn" @click="refreshClick($event)" :class="{ 'left': APP_INFO.ui_type === 1 }">
         <img src="../assets/img/refresh.svg"/>
       </div>
       <div v-if="stockData==false" class="mainProgressWrap">
@@ -141,7 +142,7 @@
     </div>
     <!--페이지상태: 알림목록-->
     <div v-else-if="mainPageStatus==='notiList'">
-      <div class="refreshBtn" @click="refreshClick($event)">
+      <div class="refreshBtn" @click="refreshClick($event)" :class="{ 'left': APP_INFO.ui_type === 1 }">
         <img src="../assets/img/refresh.svg"/>
       </div>
       <div v-if="notiList==false" class="mainProgressWrap">
@@ -213,7 +214,13 @@
 import axios from 'axios';
 import { FCM } from '@capacitor-community/fcm';
 import { io } from 'socket.io-client';
-import moment from 'moment';
+import moment from 'moment-timezone';
+import { registerPlugin } from '@capacitor/core';
+
+/* eslint-disable-next-line */
+import { AdMob, BannerAdOptions, BannerAdSize, BannerAdPosition, BannerAdPluginEvents, AdMobBannerSize } from '@capacitor-community/admob';
+
+const Echo = registerPlugin('Echo');
 
 export default {
   name: 'Main',
@@ -266,7 +273,7 @@ export default {
     getNotiList() {
       this.notiList = false;
       setTimeout(() => {
-        axios.get(`${this.APP_INFO.server}/notification/${this.APP_INFO.phone}`, {
+        axios.get(`${this.APP_INFO.server}/notification/${this.APP_INFO.phone}/${this.APP_INFO.sample_notification}`, {
           headers: {
             apikey: this.APP_INFO.api_key,
             appcode: this.APP_INFO.app_code,
@@ -336,7 +343,7 @@ export default {
             this.pageStatusCng('403');
             this.globalMsgAnimation('등록되지 않은 앱입니다.');
           } else if (r.data === 400) {
-            this.pageStatusCng('error');
+            this.pageStatusCng('err');
             this.globalMsgAnimation('유효하지 않은 유저입니다.');
           } else if (r.data.result === false) {
             this.pageStatusCng('expiration');
@@ -344,12 +351,12 @@ export default {
             this.mainPageStatus = 'notiList';
             this.getNotiList();
           } else {
-            this.pageStatusCng('error');
+            this.pageStatusCng('err');
             this.globalMsgAnimation('예기치 못한 오류가 발생하였습니다.');
           }
         })
         .catch((e) => {
-          this.pageStatusCng('error');
+          this.pageStatusCng('err');
           console.log(e);
         });
     },
@@ -366,7 +373,7 @@ export default {
             this.pageStatusCng('403');
             this.globalMsgAnimation('등록되지 않은 앱입니다.');
           } else if (r.data === 400) {
-            this.pageStatusCng('error');
+            this.pageStatusCng('err');
             this.globalMsgAnimation('유효하지 않은 유저입니다.');
           } else if (r.data.result === false) {
             this.pageStatusCng('expiration');
@@ -374,12 +381,12 @@ export default {
             this.mainPageStatus = 'stockData';
             this.getStockData();
           } else {
-            this.pageStatusCng('error');
+            this.pageStatusCng('err');
             this.globalMsgAnimation('예기치 못한 오류가 발생하였습니다.');
           }
         })
         .catch((e) => {
-          this.pageStatusCng('error');
+          this.pageStatusCng('err');
           console.log(e);
         });
     },
@@ -396,7 +403,7 @@ export default {
             this.pageStatusCng('403');
             this.globalMsgAnimation('등록되지 않은 앱입니다.');
           } else if (r.data === 400) {
-            this.pageStatusCng('error');
+            this.pageStatusCng('err');
             this.globalMsgAnimation('유효하지 않은 유저입니다.');
           } else if (r.data.result === false) {
             this.pageStatusCng('expiration');
@@ -407,12 +414,12 @@ export default {
               this.getStockData();
             }
           } else {
-            this.pageStatusCng('error');
+            this.pageStatusCng('err');
             this.globalMsgAnimation('예기치 못한 오류가 발생하였습니다.');
           }
         })
         .catch((e) => {
-          this.pageStatusCng('error');
+          this.pageStatusCng('err');
           console.log(e);
         });
     },
@@ -426,7 +433,7 @@ export default {
     },
     /* 날짜 변환 */
     dateToMoment(date) {
-      const momentDate = moment(date).format('YYYY-MM-DD HH:mm');
+      const momentDate = moment(date).tz('Asia/Seoul').format('YYYY-MM-DD HH:mm');
       return momentDate;
     },
     setNotification() {
@@ -512,8 +519,30 @@ export default {
         this.pushData.body = '';
       }, 5500);
     },
+    async adMobBannerInit() {
+      AdMob.initialize({
+        requestTrackingAuthorization: false,
+      });
+    },
+    async showBanner() {
+      const options = {
+        adId: this.APP_INFO.ad_id,
+        adSize: BannerAdSize.BANNER,
+        position: BannerAdPosition.BOTTOM_CENTER,
+        margin: 0,
+      };
+      AdMob.showBanner(options);
+    },
   },
   created() {
+    Echo.addListener('page', (e) => {
+      if (e.page === 'notification') {
+        this.pushModal = false;
+        this.gotoNotiList();
+      }
+    });
+    this.adMobBannerInit();
+    this.showBanner();
     this.refresh();
     const socket = io.connect(this.APP_INFO.server);
     socket.on(this.APP_INFO.app_code, (data) => {

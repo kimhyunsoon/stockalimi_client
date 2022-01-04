@@ -66,22 +66,23 @@ export default {
             for (let i = 0; i < keys.length; i += 1) {
               this.SET_APP_INFO_ROW([keys[i], values[i]]);
             }
-            this.setPageStatus();/* 유저 정보 확인하기 (로컬스토리지) */
+            this.setPageStatus();/* 유저 정보 저장하기 (로컬스토리지) */
           }
         })
         .catch((e) => {
-          this.pageStatusCng('error');
+          this.pageStatusCng('err');
           console.log(e);
         });
     },
-    /* 유저 정보 확인하기 (로컬스토리지) */
+    /* 유저 정보 저장하기 (로컬스토리지) */
     async setPageStatus() {
-      const ret = await Storage.get({ key: `${this.APP_INFO.app_code}_data` });
+      const ret = await Storage.get({ key: `${this.APP_INFO.app_code}_auth` });
       const val = JSON.parse(ret.value);
       if (val === null) {
         this.pageStatusCng('landing');
       } else {
-        /* 로컬스토리지에 정보가 있으면 사용자 만료 여부 검사 */
+        /* 로컬스토리지에 정보가 있으면 번호 저장 + 사용자 만료 및 알림 여부 검사 */
+        this.SET_APP_INFO_ROW(['phone', val.phone]);
         axios.get(`${this.APP_INFO.server}/expiration/${val.phone}`, {
           headers: {
             appcode: this.APP_INFO.app_code,
@@ -89,25 +90,28 @@ export default {
           },
         })
           .then((r) => {
+            this.SET_APP_INFO_ROW(['name', r.data.name]);
+            this.SET_APP_INFO_ROW(['exp_date', r.data.exp_date]);
+            this.SET_APP_INFO_ROW(['dday_cnt', r.data.dday_cnt]);
+            this.SET_APP_INFO_ROW(['notification', r.data.notification]);
             if (r.data === 403) {
               this.pageStatusCng('403');
               this.globalMsgAnimation('등록되지 않은 앱입니다.');
             } else if (r.data === 400) {
-              this.pageStatusCng('error');
+              this.pageStatusCng('err');
               this.globalMsgAnimation('유효하지 않은 유저입니다.');
             } else if (r.data.result === false) {
               this.pageStatusCng('expiration');
-              this.globalMsgAnimation(`만료일 : ${r.data.exp_date}`);
             } else if (r.data.result === true) {
               this.pageStatusCng('main');
-              this.globalMsgAnimation(`${val.name}(${val.phone})님, 반갑습니다.`);
+              this.globalMsgAnimation(`${r.data.name}(${val.phone})님, 반갑습니다.`);
             } else {
-              this.pageStatusCng('error');
+              this.pageStatusCng('err');
               this.globalMsgAnimation('예기치 못한 오류가 발생하였습니다.');
             }
           })
           .catch((e) => {
-            this.pageStatusCng('error');
+            this.pageStatusCng('err');
             console.log(e);
           });
       }

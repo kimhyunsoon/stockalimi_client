@@ -1,20 +1,20 @@
 {
   "project_info": {
-    "project_number": "306026097665",
-    "project_id": "stockalimi",
-    "storage_bucket": "stockalimi.appspot.com"
+    "project_number": "554387676284",
+    "project_id": "stockalimiapp",
+    "storage_bucket": "stockalimiapp.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:306026097665:android:18e4bdd936c0c69a472400",
+        "mobilesdk_app_id": "1:554387676284:android:e6a1556d07520ab174bdf9",
         "android_client_info": {
           "package_name": "com.barun.alimi"
         }
       },
       "oauth_client": [
         {
-          "client_id": "306026097665-frr4t8o2gc760e8gploikne55hda89se.apps.googleusercontent.com",
+          "client_id": "554387676284-srnae0ptongvm8ukc8pm50u58tvsgk23.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.barun.alimi",
@@ -22,20 +22,20 @@
           }
         },
         {
-          "client_id": "306026097665-5u1s31cjqbq5a9uirkvadvvarfmlf14l.apps.googleusercontent.com",
+          "client_id": "554387676284-33n72ds94jst20hbpklfjbks2mkc1p8p.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDwrkaV5-yQQHPF42NvKclqE52GfqaPPQA"
+          "current_key": "AIzaSyDsomp_7tGXm0V0bRYUOLfSaE1Nd8C74cA"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "306026097665-5u1s31cjqbq5a9uirkvadvvarfmlf14l.apps.googleusercontent.com",
+              "client_id": "554387676284-33n72ds94jst20hbpklfjbks2mkc1p8p.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
@@ -44,14 +44,14 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:306026097665:android:5a4de6726521df1e472400",
+        "mobilesdk_app_id": "1:554387676284:android:8902111a6d49848574bdf9",
         "android_client_info": {
           "package_name": "com.stock.alimi"
         }
       },
       "oauth_client": [
         {
-          "client_id": "306026097665-69vrbhrpcbt313d3o4cb7c39ce2b2fvd.apps.googleusercontent.com",
+          "client_id": "554387676284-ui42kbuk0u87vp857jond85kvd2g3103.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.stock.alimi",
@@ -59,20 +59,20 @@
           }
         },
         {
-          "client_id": "306026097665-5u1s31cjqbq5a9uirkvadvvarfmlf14l.apps.googleusercontent.com",
+          "client_id": "554387676284-33n72ds94jst20hbpklfjbks2mkc1p8p.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDwrkaV5-yQQHPF42NvKclqE52GfqaPPQA"
+          "current_key": "AIzaSyDsomp_7tGXm0V0bRYUOLfSaE1Nd8C74cA"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "306026097665-5u1s31cjqbq5a9uirkvadvvarfmlf14l.apps.googleusercontent.com",
+              "client_id": "554387676284-33n72ds94jst20hbpklfjbks2mkc1p8p.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

@@ -4,4 +4,5 @@
     <string name="title_activity_main">급등주알리미</string>
     <string name="package_name">com.stock.alimi</string>
     <string name="custom_url_scheme">com.stock.alimi</string>
+    <string name="admob_app_id">ca-app-pub-6008752753258665~5853696011</string>
 </resources>

@@ -9,26 +9,75 @@
         </p>
       </div>
       <div class="bottomWrap">
-        <div class="confirmCheckWrap" @click="confirmModalOpen();">
-          <v-checkbox
-            v-model="confirmCheck"
-            :color=APP_INFO.app_color
-          ></v-checkbox>
-          <p class="msg">서비스 이용을 위한 <b :style="[{ color: APP_INFO.app_color }, { borderColor: APP_INFO.app_color }]">개인정보수집 약관</b>에 동의합니다.</p>
+        <div class="confirmCheckWrap">
+          <label for="allConfirm" class="confirmLabel" @click="allConfirmClick()">
+            <div class="checkIconBox" :style=" allConfirm ? `backgroundColor: ${APP_INFO.app_color};`:''">
+              <svg class="checkIcon" viewBox="0 0 512 512" fill="none">
+                <path d="M173.898 439.404L7.49799 273.004C-2.49901 263.007 -2.49901 246.798 7.49799 236.8L43.701 200.596C53.698 190.598 69.908 190.598 79.905 200.596L192 312.69L432.095 72.5959C442.092 62.5989 458.302 62.5989 468.299 72.5959L504.502 108.8C514.499 118.797 514.499 135.006 504.502 145.004L210.102 439.405C200.104 449.402 183.895 449.402 173.898 439.404V439.404Z"/>
+              </svg>
+            </div>
+            <p class="msg">모든 약관에 동의합니다.</p>
+          </label>
+          <div class="subLabelWrap">
+            <label for="confirm_1" class="confirmLabel sub" @click="confirmClick()">
+              <input type="checkbox" id="confirm_1" v-model="confirm_1" hidden/>
+              <svg class="checkIcon" viewBox="0 0 512 512" fill="none">
+                <path d="M173.898 439.404L7.49799 273.004C-2.49901 263.007 -2.49901 246.798 7.49799 236.8L43.701 200.596C53.698 190.598 69.908 190.598 79.905 200.596L192 312.69L432.095 72.5959C442.092 62.5989 458.302 62.5989 468.299 72.5959L504.502 108.8C514.499 118.797 514.499 135.006 504.502 145.004L210.102 439.405C200.104 449.402 183.895 449.402 173.898 439.404V439.404Z" :style=" confirm_1 ? `fill: ${APP_INFO.app_color};`:''"/>
+              </svg>
+              <p class="msgSub">서비스 약관 동의</p>
+            </label>
+            <b @click="confirmModalOpen(1)" class="modalOpenBtn">상세보기</b>
+          </div>
+          <div class="subLabelWrap">
+            <label for="confirm_2" class="confirmLabel sub" @click="confirmClick()">
+              <input type="checkbox" id="confirm_2" v-model="confirm_2" hidden/>
+              <svg class="checkIcon" viewBox="0 0 512 512" fill="none">
+                <path d="M173.898 439.404L7.49799 273.004C-2.49901 263.007 -2.49901 246.798 7.49799 236.8L43.701 200.596C53.698 190.598 69.908 190.598 79.905 200.596L192 312.69L432.095 72.5959C442.092 62.5989 458.302 62.5989 468.299 72.5959L504.502 108.8C514.499 118.797 514.499 135.006 504.502 145.004L210.102 439.405C200.104 449.402 183.895 449.402 173.898 439.404V439.404Z" :style=" confirm_2 ? `fill: ${APP_INFO.app_color};`:''"/>
+              </svg>
+              <p class="msgSub">개인정보 수집 및 이용 동의</p>
+            </label>
+            <b class="modalOpenBtn" @click="confirmModalOpen(2)">상세보기</b>
+          </div>
+          <div class="subLabelWrap">
+            <label for="confirm_3" class="confirmLabel sub" @click="confirmClick()">
+              <input type="checkbox" id="confirm_3" v-model="confirm_3" hidden/>
+              <svg class="checkIcon" viewBox="0 0 512 512" fill="none">
+                <path d="M173.898 439.404L7.49799 273.004C-2.49901 263.007 -2.49901 246.798 7.49799 236.8L43.701 200.596C53.698 190.598 69.908 190.598 79.905 200.596L192 312.69L432.095 72.5959C442.092 62.5989 458.302 62.5989 468.299 72.5959L504.502 108.8C514.499 118.797 514.499 135.006 504.502 145.004L210.102 439.405C200.104 449.402 183.895 449.402 173.898 439.404V439.404Z" :style=" confirm_3 ? `fill: ${APP_INFO.app_color};`:''"/>
+              </svg>
+              <p class="msgSub">개인정보 제3자 제공 동의</p>
+            </label>
+            <b class="modalOpenBtn" @click="confirmModalOpen(3)">상세보기</b>
+          </div>
         </div>
-        <button class="nextBtn" v-bind:class="{ 'on':confirmCheck }" v-bind:style=" confirmCheck ? `backgroundColor: ${APP_INFO.app_color};`:''" @click="pageStateCng('con2', $event)">시작하기</button>
+        <button class="nextBtn" v-bind:class="{ 'on':allConfirm }" v-bind:style=" allConfirm ? `backgroundColor: ${APP_INFO.app_color};`:''" @click="pageStateCng('con2', $event)">시작하기</button>
       </div>
-      <v-bottom-sheet v-model="confirmModal" duration="20000">
+      <v-bottom-sheet v-model="confirmModal_1" duration="20000">
         <v-sheet
           class="serviceConfirmModal"
-          height="500px"
         >
           <div class="serviceConfirmContent">
-            <p class="head">서비스 이용약관</p>
-            <p class="body">{{ APP_INFO.terms_conditions }}</p>
-            <div class="btnWrap">
-              <button class="confirm" :style="{ backgroundColor: APP_INFO.app_color }" @click="confirmCheckAgree()">동의하기</button>
-            </div>
+            <p class="head">서비스 약관 동의<b @click="confirmModalClose()">×</b></p>
+            <div v-html="APP_INFO.terms_use_1" class="body"></div>
+          </div>
+        </v-sheet>
+      </v-bottom-sheet>
+      <v-bottom-sheet v-model="confirmModal_2" duration="20000">
+        <v-sheet
+          class="serviceConfirmModal"
+        >
+          <div class="serviceConfirmContent">
+            <p class="head">개인정보 수집 및 이용 동의<b @click="confirmModalClose()">×</b></p>
+            <div v-html="APP_INFO.terms_use_2" class="body"></div>
+          </div>
+        </v-sheet>
+      </v-bottom-sheet>
+      <v-bottom-sheet v-model="confirmModal_3" duration="20000">
+        <v-sheet
+          class="serviceConfirmModal"
+        >
+          <div class="serviceConfirmContent">
+            <p class="head">개인정보 제3자 제공 동의<b @click="confirmModalClose()">×</b></p>
+            <div v-html="APP_INFO.terms_use_3" class="body"></div>
           </div>
         </v-sheet>
       </v-bottom-sheet>
@@ -202,8 +251,13 @@ export default {
   },
   data: () => ({
     pageState: 'con1',
-    confirmCheck: false,
-    confirmModal: false,
+    allConfirm: false,
+    confirm_1: false,
+    confirm_2: false,
+    confirm_3: false,
+    confirmModal_1: false,
+    confirmModal_2: false,
+    confirmModal_3: false,
     userName: '',
     userPhone: '',
     userInformationCheck: false,
@@ -240,15 +294,51 @@ export default {
         this.pageState = page;
       }
     },
-    /* 개인정보수집 모달 */
-    confirmModalOpen() {
-      this.confirmCheck = false;
-      this.confirmModal = true;
+    /* 이용약관 모달 닫기 */
+    confirmModalClose() {
+      this.confirmModal_1 = false;
+      this.confirmModal_2 = false;
+      this.confirmModal_3 = false;
     },
-    /* 개인정보수집 동의 */
-    confirmCheckAgree() {
-      this.confirmCheck = true;
-      this.confirmModal = false;
+    /* 이용약관 모달 열기 */
+    confirmModalOpen(number) {
+      switch (number) {
+        case 1:
+          this.confirmModal_1 = true;
+          break;
+        case 2:
+          this.confirmModal_2 = true;
+          break;
+        case 3:
+          this.confirmModal_3 = true;
+          break;
+        default:
+          console.log(number);
+      }
+    },
+    /* 모두동의 클릭 */
+    allConfirmClick() {
+      if (this.allConfirm === true) {
+        this.allConfirm = false;
+        this.confirm_1 = false;
+        this.confirm_2 = false;
+        this.confirm_3 = false;
+      } else {
+        this.allConfirm = true;
+        this.confirm_1 = true;
+        this.confirm_2 = true;
+        this.confirm_3 = true;
+      }
+    },
+    /* 각 항목 동의 클릭 */
+    confirmClick() {
+      setTimeout(() => {
+        if (this.confirm_1 === true && this.confirm_2 === true && this.confirm_3 === true) {
+          this.allConfirm = true;
+        } else {
+          this.allConfirm = false;
+        }
+      }, 0);
     },
     /* 회원정보 유효성 체크 */
     userInformationCheckFunc() {

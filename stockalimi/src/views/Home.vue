@@ -21,7 +21,7 @@
       <expiration-page/>
     </div>
     <!-- 에러가 발생했을 경우 -->
-    <div v-else-if="pageStatus === 'error'">
+    <div v-else-if="pageStatus === 'err'">
       <error-page/>
     </div>
     <!-- 인증되지 않은 앱일 경우 -->
@@ -111,15 +111,16 @@ export default {
             for (let i = 0; i < keys.length; i += 1) {
               this.SET_APP_INFO_ROW([keys[i], values[i]]);
             }
-            this.setPageStatus();/* 유저 정보 확인하기 (로컬스토리지) */
+            console.log(this.APP_INFO);
+            this.setPageStatus();/* 유저 정보 저장하기 (로컬스토리지) */
           }
         })
         .catch((e) => {
-          this.pageStatusCng('error');
+          this.pageStatusCng('err');
           console.log(e);
         });
     },
-    /* 유저 정보 확인하기 (로컬스토리지) */
+    /* 유저 정보 저장하기 (로컬스토리지) */
     async setPageStatus() {
       const ret = await Storage.get({ key: `${this.APP_INFO.app_code}_auth` });
       const val = JSON.parse(ret.value);
@@ -143,7 +144,7 @@ export default {
               this.pageStatusCng('403');
               this.globalMsgAnimation('등록되지 않은 앱입니다.');
             } else if (r.data === 400) {
-              this.pageStatusCng('error');
+              this.pageStatusCng('err');
               this.globalMsgAnimation('유효하지 않은 유저입니다.');
             } else if (r.data.result === false) {
               this.pageStatusCng('expiration');
@@ -151,27 +152,15 @@ export default {
               this.pageStatusCng('main');
               this.globalMsgAnimation(`${r.data.name}(${val.phone})님, 반갑습니다.`);
             } else {
-              this.pageStatusCng('error');
+              this.pageStatusCng('err');
               this.globalMsgAnimation('예기치 못한 오류가 발생하였습니다.');
             }
           })
           .catch((e) => {
-            this.pageStatusCng('error');
+            this.pageStatusCng('err');
             console.log(e);
           });
       }
-    },
-    async localDel() {
-      await Storage.remove({ key: `${this.APP_INFO.app_code}_data` });
-      await Storage.remove({ key: `${this.APP_INFO.app_code}_auth` });
-    },
-    async localLog() {
-      const data = await Storage.get({ key: `${this.APP_INFO.app_code}_data` });
-      const auth = await Storage.get({ key: `${this.APP_INFO.app_code}_auth` });
-      const dataVal = JSON.parse(data.value);
-      const authVal = JSON.parse(auth.value);
-      console.log(dataVal);
-      console.log(authVal);
     },
   },
 };
