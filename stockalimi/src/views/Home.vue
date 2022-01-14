@@ -111,7 +111,6 @@ export default {
             for (let i = 0; i < keys.length; i += 1) {
               this.SET_APP_INFO_ROW([keys[i], values[i]]);
             }
-            console.log(this.APP_INFO);
             this.setPageStatus();/* 유저 정보 저장하기 (로컬스토리지) */
           }
         })
